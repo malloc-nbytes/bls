@@ -47,8 +47,13 @@ static void show_date(const Entry *const entry) {
     if (!BIT_SET(g_flags, FLAG_TYPE_TIME))
         return;
     char *time = ctime(&entry->st->st_mtime);
-    time[strcspn(time, "\n")] = '\0';
-    printf("%s ", time);
+    if (!time) {
+        printf("??????????????");
+    }
+    else {
+        time[strcspn(time, "\n")] = '\0';
+        printf("%s ", time);
+    }
 }
 
 static void show_filesz(const Entry *const entry) {
