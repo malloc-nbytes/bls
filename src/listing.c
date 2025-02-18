@@ -54,9 +54,10 @@ static void show_date(const Entry *const entry) {
 static void show_filesz(const Entry *const entry) {
     if (!BIT_SET(g_flags, FLAG_TYPE_SZ))
         return;
-    if (FLAG_IS_VERBOSE(g_flags) && !BIT_SET(g_flags, FLAG_TYPE_LONG))
-        printf("%*", entry->max_f_sz);
-    printf("%lld ", (long long)entry->st->st_size);
+    if (FLAG_IS_VERBOSE(g_flags) && BIT_SET(g_flags, FLAG_TYPE_LONG))
+        printf("%*lld ", entry->max_f_sz, (long long)entry->st->st_size);
+    else
+        printf("%lld ", (long long)entry->st->st_size);
 }
 
 static int show_file(const Entry *const entry) {
@@ -159,17 +160,40 @@ void listing_show(Listing *listing) {
 Listing listing_ls(const char *const path) {
     DIR *dir;
     struct dirent *entry;
+    struct stat path_check_stat;
 
-    const size_t fullpath_len = 1024;
-    char fullpath[fullpath_len];
+    (void)stat(path, &path_check_stat);
 
     Listing listing = {0};
     listing.parent = listing.current = -1;
+
+    if (!S_ISDIR(path_check_stat.st_mode)) {
+        struct passwd *pw = getpwuid(path_check_stat.st_uid);
+        struct group *gr = getgrgid(path_check_stat.st_gid);
+
+        listing.max_f_sz = snprintf(NULL, 0, "%lld", (long long)path_check_stat.st_size);
+
+        Entry entry_obj = {
+            .d_name = strdup(path),
+            .d_type = S_ISDIR(path_check_stat.st_mode) ? DT_DIR : DT_REG,
+            .pw = pw,
+            .gr = gr,
+            .st = s_malloc(sizeof(struct stat)),
+            .max_f_sz = listing.max_f_sz,
+        };
+
+        *(entry_obj.st) = path_check_stat;
+
+        da_append(listing.entries.data, listing.entries.len, listing.entries.cap, Entry *, entry_obj);
+        return listing;
+    }
 
     dir = opendir(path);
     if (!dir)
         err_wargs("%s", strerror(errno));
 
+    const size_t fullpath_len = 1024;
+    char fullpath[fullpath_len];
     size_t i = 0;
     while ((entry = readdir(dir)) != NULL) {
         snprintf(fullpath, sizeof(fullpath), "%s/%s", path, entry->d_name);
@@ -179,7 +203,7 @@ Listing listing_ls(const char *const path) {
         (void)stat(fullpath, stat_);
 
         struct passwd *pw = getpwuid(stat_->st_uid);
-        struct group *gr = getgrgid(stat_->st_gid);
+        struct group  *gr = getgrgid(stat_->st_gid);
 
         // Capture indices of special directories.
         if (entry->d_name[0] == '.' && !entry->d_name[1])

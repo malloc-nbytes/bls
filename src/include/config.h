@@ -75,8 +75,7 @@ typedef enum uint32_t {
 
 #define FLAG_IS_VERBOSE(f) \
     (((f) &                                     \
-      (FLAG_TYPE_LONG                           \
-       | FLAG_TYPE_PERMISSIONS                  \
+      (FLAG_TYPE_PERMISSIONS                    \
        | FLAG_TYPE_USER                         \
        | FLAG_TYPE_GROUP                        \
        | FLAG_TYPE_TIME                         \

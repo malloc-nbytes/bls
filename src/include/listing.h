@@ -9,7 +9,23 @@
 
 #define IS_DIR(e) ((typeof(e)) (e))->d_type == DT_DIR
 
-#define IS_HIDDEN(e) ((typeof(e)) (e))->d_name[0] == '.'
+#define BACK_ONE_DIR2(e) (((typeof(e)) (e))->d_name[0] == '.'           \
+                          && ((typeof(e)) (e))->d_name[1]               \
+                          && ((typeof(e)) (e))->d_name[1] == '.'        \
+                          && ((typeof(e)) (e))->d_name[2]               \
+                          && ((typeof(e)) (e))->d_name[2] == '/')
+
+#define BACK_ONE_DIR1(e) (((typeof(e)) (e))->d_name[0] == '.'           \
+                          && ((typeof(e)) (e))->d_name[1]               \
+                          && ((typeof(e)) (e))->d_name[1] == '/')
+
+#define CUR_DIR(e) (((typeof(e)) (e))->d_name[0] == '.'                 \
+                    && ((typeof(e)) (e))->d_name[1]                     \
+                    && ((typeof(e)) (e))->d_name[0] == '/')
+
+#define IS_HIDDEN(e)                                                    \
+    (((typeof(e)) (e))->d_name[0] == '.'                                \
+     && !BACK_ONE_DIR1(e) && !BACK_ONE_DIR2(e) && !CUR_DIR(e))
 
 typedef struct {
     const char *d_name;
@@ -17,7 +33,7 @@ typedef struct {
     struct passwd *pw;
     struct group *gr;
     struct stat *st;
-    size_t max_f_sz;
+    size_t max_f_sz; // Should be same a `Listing`
 } Entry;
 
 typedef struct {
@@ -26,9 +42,9 @@ typedef struct {
         size_t len;
         size_t cap;
     } entries;
-    int current; // .  (-1 default)
-    int parent;  // .. (-1 default)
-    size_t max_f_sz;
+    int current;     // .  (-1 default)
+    int parent;      // .. (-1 default)
+    size_t max_f_sz; // Max filesize digits length
 } Listing;
 
 Listing listing_ls(const char *const path);
