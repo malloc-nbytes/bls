@@ -8,6 +8,7 @@
 #include "listing.h"
 #include "config.h"
 #include "color.h"
+#include "mem.h"
 #include "utils.h"
 
 static void show_permissions(mode_t mode) {
@@ -26,6 +27,14 @@ static void show_permissions(mode_t mode) {
     printf("%s ", perms);
 }
 
+static void show_groups(const struct passwd *const pw) {
+    printf("%s", pw ? pw->pw_name : "unknown");
+}
+
+static void show_users(const struct group *const gr) {
+    printf("%s", gr ? gr->gr_name : "unknown");
+}
+
 static int show_file(const struct dirent *const entry) {
     if (BIT_SET(g_flags, FLAG_TYPE_DIRS_ONLY))
         return 0;
@@ -36,6 +45,7 @@ static int show_file(const struct dirent *const entry) {
     }
     else
         color(BLS_DEFAULT_COLOR_FILE);
+    //show_groups(entry->);
     printf("%s" RESET, entry->d_name);
     return 1;
 }
@@ -58,21 +68,21 @@ void listing_show(Listing *listing) {
     // Handle the special dirs '.' and '..' first.
     if (BIT_SET(g_flags, FLAG_TYPE_ALL)) {
         color(GRAY UNDERLINE BOLD);
-        printf("%s" RESET, listing->data[listing->current]->d_name);
+        printf("%s" RESET, listing->entries.actual[listing->current]->d_name);
         printf(BIT_SET(g_flags, FLAG_TYPE_LONG) ? "\n" : "  ");
 
         color(GRAY UNDERLINE BOLD);
-        printf("%s" RESET, listing->data[listing->parent]->d_name);
+        printf("%s" RESET, listing->entries.actual[listing->parent]->d_name);
         printf(BIT_SET(g_flags, FLAG_TYPE_LONG) ? "\n" : "  ");
     }
 
     // Go through all entries listed.
-    for (size_t i = 0, char_acc = 0; i < listing->len; ++i) {
+    for (size_t i = 0, char_acc = 0; i < listing->entries.len; ++i) {
 
         // Skip special dirs.
         if (i == listing->parent || i == listing->current) continue;
 
-        struct dirent *entry = listing->data[i];
+        struct dirent *entry = listing->entries.actual[i];
 
         int showed = 0;
         if (IS_DIR(entry)) showed = show_dir(entry);
@@ -80,7 +90,7 @@ void listing_show(Listing *listing) {
 
         // Do not put extra characters after we have
         // gone through all entries.
-        if (showed && i != listing->len-1) {
+        if (showed && i != listing->entries.len-1) {
             if (BIT_SET(g_flags, FLAG_TYPE_LONG))
                 putchar('\n');
             else
@@ -104,6 +114,9 @@ Listing listing_ls(const char *const path) {
     DIR *dir;
     struct dirent *entry;
 
+    const size_t fullpath_len = 1024;
+    char fullpath[fullpath_len];
+
     Listing listing = {0};
     listing.parent = listing.current = -1;
 
@@ -113,11 +126,30 @@ Listing listing_ls(const char *const path) {
 
     size_t i = 0;
     while ((entry = readdir(dir)) != NULL) {
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", path, entry->d_name);
+
+        struct stat *stat_ = s_malloc(sizeof(struct stat));
+
+        if (stat(fullpath, stat_) == -1) {
+            perror("stat");
+            continue;
+        }
+
+        struct passwd *pw = getpwuid(stat_->st_uid);
+        struct group *gr = getgrgid(stat_->st_gid);
+
+        // Capture indices of special directories.
         if (entry->d_name[0] == '.' && !entry->d_name[1])
             listing.current = i;
         else if (entry->d_name[0] == '.' && entry->d_name[1] && entry->d_name[1] == '.' && !entry->d_name[2])
             listing.parent = i;
-        da_append(listing.data, listing.len, listing.cap, struct dirent **, entry);
+
+        da_append(listing.entries.actual, listing.entries.len, listing.entries.cap, struct dirent **, entry);
+        da_append(listing.entries.stats,  listing.entries.len, listing.entries.cap, struct stat **,   stat_);
+        da_append(listing.entries.pws,    listing.entries.len, listing.entries.cap, struct passwd **, pw);
+        da_append(listing.entries.grs,    listing.entries.len, listing.entries.cap, struct group **,  gr);
+
+        (void)memset(fullpath, '\0', fullpath_len);
         ++i;
     }
 

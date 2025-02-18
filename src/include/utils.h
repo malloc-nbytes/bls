@@ -2,10 +2,11 @@
 #define UTILS_H
 
 #include <stdlib.h>
+#include <stdio.h>
 
 #define BIT_SET(bits, bit) ((bits) & (bit)) != 0
 
-#define safe_peek(arr, i, el) ((arr)[i] && (arr)[i] == el)
+#define SAFE_PEEK(arr, i, el) ((arr)[i] && (arr)[i] == el)
 
 #define da_append(arr, len, cap, ty, value)                       \
     do {                                                          \

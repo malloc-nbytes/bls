@@ -78,17 +78,15 @@ int get_term_width(void) {
 int main(int argc, char **argv) {
     struct {
         const char **data;
-        size_t len;
-        size_t cap;
-    } paths;
-
-    char *arg = NULL;
+        size_t len, cap;
+    } paths = {0};
 
     g_term_width = get_term_width();
     g_progname = eat(&argc, &argv);
 
+    char *arg = NULL;
     while ((arg = eat(&argc, &argv)) != NULL) {
-        if (arg[0] && safe_peek(arg, 1, '-'))
+        if (arg[0] && SAFE_PEEK(arg, 1, '-'))
             handle_2hy_flag(arg, &argc, &argv);
         else if (arg[0] == '-' && arg[1])
             handle_1hy_flag(arg, &argc, &argv);
