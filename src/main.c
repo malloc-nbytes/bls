@@ -17,6 +17,8 @@ char    *g_progname   = NULL;
 size_t   g_term_width = 0;
 
 void usage(void) {
+    printf("(MIT License) Copyright (c) 2025 malloc-nbytes\n\n");
+
     printf("Usage:\n");
     printf("  %s [path] [options]\n", g_progname);
     printf("Options:\n");
