@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <pwd.h>
 #include <grp.h>
+#include <time.h>
 
 #include "listing.h"
 #include "config.h"
@@ -42,6 +43,22 @@ static void show_user(const Entry *const entry) {
     printf("%s ", entry->gr ? entry->gr->gr_name : "unknown");
 }
 
+static void show_date(const Entry *const entry) {
+    if (!BIT_SET(g_flags, FLAG_TYPE_TIME))
+        return;
+    char *time = ctime(&entry->st->st_mtime);
+    time[strcspn(time, "\n")] = '\0';
+    printf("%s ", time);
+}
+
+static void show_filesz(const Entry *const entry) {
+    if (!BIT_SET(g_flags, FLAG_TYPE_SZ))
+        return;
+    if (FLAG_IS_VERBOSE(g_flags) && !BIT_SET(g_flags, FLAG_TYPE_LONG))
+        printf("%*", entry->max_f_sz);
+    printf("%lld ", (long long)entry->st->st_size);
+}
+
 static int show_file(const Entry *const entry) {
     if (BIT_SET(g_flags, FLAG_TYPE_DIRS_ONLY))
         return 0;
@@ -58,12 +75,20 @@ static int show_file(const Entry *const entry) {
 
     padding();
 
+    if (FLAG_IS_VERBOSE(g_flags) && !BIT_SET(g_flags, FLAG_TYPE_LONG))
+        putchar('(');
+
     show_permissions(entry);
     show_user(entry);
     show_group(entry);
+    show_filesz(entry);
+    show_date(entry);
 
     color(format);
-    printf("%s" RESET, entry->dirent->d_name);
+    printf("%s" RESET, entry->d_name);
+
+    if (FLAG_IS_VERBOSE(g_flags) && !BIT_SET(g_flags, FLAG_TYPE_LONG))
+        putchar(')');
 
     return 1;
 }
@@ -84,12 +109,20 @@ static int show_dir(const Entry *const entry) {
 
     padding();
 
+    if (FLAG_IS_VERBOSE(g_flags) && !BIT_SET(g_flags, FLAG_TYPE_LONG))
+        putchar('(');
+
     show_permissions(entry);
     show_user(entry);
     show_group(entry);
+    show_filesz(entry);
+    show_date(entry);
 
     color(format);
-    printf("%s" RESET, entry->dirent->d_name);
+    printf("%s" RESET, entry->d_name);
+
+    if (FLAG_IS_VERBOSE(g_flags) && !BIT_SET(g_flags, FLAG_TYPE_LONG))
+        putchar(')');
 
     return 1;
 }
@@ -112,7 +145,7 @@ void listing_show(Listing *listing) {
         // Keep track of how many characters we have printed
         // and put a newline, but only if LONG is not enabled.
         if (showed) {
-            char_acc += strlen(entry->dirent->d_name);
+            char_acc += strlen(entry->d_name);
             if (!BIT_SET(g_flags, FLAG_TYPE_LONG)
                 && char_acc >= g_term_width/2
                 && i        != listing->entries.len-1)
@@ -155,15 +188,23 @@ Listing listing_ls(const char *const path) {
             listing.parent = i;
 
         Entry entry_obj = (Entry) {
-            .dirent = entry,
+            .d_name = strdup(entry->d_name),
+            .d_type = entry->d_type,
             .pw = pw,
             .gr = gr,
             .st = stat_,
+            .max_f_sz = 0,
         };
 
         da_append(listing.entries.data, listing.entries.len, listing.entries.cap, Entry *, entry_obj);
 
         (void)memset(fullpath, '\0', fullpath_len);
+
+        // Get the length of the filesize digits.
+        size_t file_sz_len = snprintf(NULL, 0, "%lld", (long long)entry_obj.st->st_size);
+        if (file_sz_len > listing.max_f_sz)
+            listing.max_f_sz = file_sz_len;
+
         ++i;
     }
 
@@ -190,6 +231,9 @@ Listing listing_ls(const char *const path) {
             listing.parent = 1;
         }
     }
+
+    for (size_t i = 0; i < listing.entries.len; ++i)
+        listing.entries.data[i].max_f_sz = listing.max_f_sz;
 
     return listing;
 }

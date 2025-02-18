@@ -11,5 +11,9 @@ void color(const char *c) {
 }
 
 void padding(void) {
-    printf("%*s", 2, "");
+    //printf("%*s", 2, "");
+    if (!BIT_SET(g_flags, FLAG_TYPE_LONG))
+        printf(" ─ ");
+    else
+        printf("├─ ");
 }

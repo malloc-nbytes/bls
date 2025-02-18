@@ -16,6 +16,8 @@
 #define FLAG_1HY_PERMISSIONS 'p'
 #define FLAG_1HY_USER        'u'
 #define FLAG_1HY_GROUP       'g'
+#define FLAG_1HY_TIME        't'
+#define FLAG_1HY_SZ          's'
 
 #define FLAG_1HY_ASCPL {                        \
         FLAG_1HY_HELP,                          \
@@ -25,7 +27,9 @@
         FLAG_1HY_ALL,                           \
         FLAG_1HY_PERMISSIONS,                   \
         FLAG_1HY_USER,                          \
-        FLAG_1HY_GROUP                          \
+        FLAG_1HY_GROUP,                         \
+        FLAG_1HY_TIME,                          \
+        FLAG_1HY_SZ,                            \
 }
 
 // Two hyphen flags
@@ -38,6 +42,8 @@
 #define FLAG_2HY_PERMISSIONS "--permissions"
 #define FLAG_2HY_USER        "--user"
 #define FLAG_2HY_GROUP       "--group"
+#define FLAG_2HY_TIME        "--time"
+#define FLAG_2HY_SZ          "--size"
 
 #define FLAG_2HY_ASCPL {         \
         FLAG_2HY_HELP,           \
@@ -49,6 +55,8 @@
         FLAG_2HY_PERMISSIONS,    \
         FLAG_2HY_USER,           \
         FLAG_2HY_GROUP,          \
+        FLAG_2HY_TIME,           \
+        FLAG_2HY_SZ,             \
 }
 
 typedef enum uint32_t {
@@ -61,7 +69,19 @@ typedef enum uint32_t {
     FLAG_TYPE_PERMISSIONS = 1 << 6,
     FLAG_TYPE_USER        = 1 << 7,
     FLAG_TYPE_GROUP       = 1 << 8,
+    FLAG_TYPE_TIME        = 1 << 9,
+    FLAG_TYPE_SZ          = 1 << 10,
 } Flag_Type;
+
+#define FLAG_IS_VERBOSE(f) \
+    (((f) &                                     \
+      (FLAG_TYPE_LONG                           \
+       | FLAG_TYPE_PERMISSIONS                  \
+       | FLAG_TYPE_USER                         \
+       | FLAG_TYPE_GROUP                        \
+       | FLAG_TYPE_TIME                         \
+       | FLAG_TYPE_SZ)                          \
+      ) != 0)
 
 extern uint32_t g_flags;
 extern char    *g_progname;

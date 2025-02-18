@@ -30,8 +30,9 @@ void usage(void) {
     printf("  " FLAG_2HY_PERMISSIONS ", -%c   Show file permissions\n", FLAG_1HY_PERMISSIONS);
     printf("  " FLAG_2HY_USER ",  -%c         Show owner\n", FLAG_1HY_USER);
     printf("  " FLAG_2HY_GROUP ", -%c         Show group\n", FLAG_1HY_GROUP);
-    printf("  " FLAG_2HY_GROUP ", -%c         Show group\n", FLAG_1HY_GROUP);
-    printf("  " FLAG_2HY_NO_COLOR "          Do not use colors\n");
+    printf("  " FLAG_2HY_TIME ",  -%c         Show time\n", FLAG_1HY_TIME);
+    printf("  " FLAG_2HY_SZ ",  -%c         Show size\n", FLAG_1HY_SZ);
+    printf("  " FLAG_2HY_NO_COLOR "          Do not use colors or effects\n");
 
     exit(0);
 }
@@ -62,6 +63,10 @@ void handle_2hy_flag(const char *arg, int *argc, char ***argv) {
         g_flags |= FLAG_TYPE_USER | FLAG_TYPE_LONG;
     else if (!strcmp(arg, FLAG_2HY_GROUP))
         g_flags |= FLAG_TYPE_GROUP | FLAG_TYPE_LONG;
+    else if (!strcmp(arg, FLAG_2HY_TIME))
+        g_flags |= FLAG_TYPE_TIME | FLAG_TYPE_LONG;
+    else if (!strcmp(arg, FLAG_2HY_SZ))
+        g_flags |= FLAG_TYPE_SZ | FLAG_TYPE_LONG;
     else
         err_wargs("Unknown option: `%s`", arg);
 }
@@ -80,11 +85,15 @@ void handle_1hy_flag(const char *arg, int *argc, char ***argv) {
         else if (*it == FLAG_1HY_ALL)
             g_flags |= FLAG_TYPE_ALL;
         else if (*it == FLAG_1HY_PERMISSIONS)
-            g_flags |= FLAG_TYPE_PERMISSIONS | FLAG_TYPE_LONG;
+            g_flags |= FLAG_TYPE_PERMISSIONS;// | FLAG_TYPE_LONG;
         else if (*it == FLAG_1HY_USER)
-            g_flags |= FLAG_TYPE_USER | FLAG_TYPE_LONG;
+            g_flags |= FLAG_TYPE_USER;// | FLAG_TYPE_LONG;
         else if (*it == FLAG_1HY_GROUP)
-            g_flags |= FLAG_TYPE_GROUP | FLAG_TYPE_LONG;
+            g_flags |= FLAG_TYPE_GROUP;// | FLAG_TYPE_LONG;
+        else if (*it == FLAG_1HY_TIME)
+            g_flags |= FLAG_TYPE_TIME;// | FLAG_TYPE_LONG;
+        else if (*it == FLAG_1HY_SZ)
+            g_flags |= FLAG_TYPE_SZ;// | FLAG_TYPE_LONG;
         else
             err_wargs("Unknown option: `%c`", *it);
             ++it;
