@@ -9,6 +9,7 @@
 
 #include "config.h"
 #include "listing.h"
+#include "color.h"
 #include "utils.h"
 
 uint32_t g_flags      = 0x0;
@@ -16,8 +17,20 @@ char    *g_progname   = NULL;
 size_t   g_term_width = 0;
 
 void usage(void) {
-    printf("Usage: ");
-    printf("%s [path] [options]\n", g_progname);
+    printf("Usage:\n");
+    printf("  %s [path] [options]\n", g_progname);
+    printf("Options:\n");
+    printf("  " FLAG_2HY_HELP ",  -%c         Show this message\n", FLAG_1HY_HELP);
+    printf("  " FLAG_2HY_LONG ",  -%c         Show entries vertically\n", FLAG_1HY_LONG);
+    printf("  " FLAG_2HY_FILES_ONLY ", -%c         Only show files\n", FLAG_1HY_FILES_ONLY);
+    printf("  " FLAG_2HY_DIRS_ONLY ",  -%c         Only show directories\n", FLAG_1HY_DIRS_ONLY);
+    printf("  " FLAG_2HY_ALL ",   -%c         Show all entries\n", FLAG_1HY_ALL);
+    printf("  " FLAG_2HY_PERMISSIONS ", -%c   Show file permissions\n", FLAG_1HY_PERMISSIONS);
+    printf("  " FLAG_2HY_USER ",  -%c         Show owner\n", FLAG_1HY_USER);
+    printf("  " FLAG_2HY_GROUP ", -%c         Show group\n", FLAG_1HY_GROUP);
+    printf("  " FLAG_2HY_GROUP ", -%c         Show group\n", FLAG_1HY_GROUP);
+    printf("  " FLAG_2HY_NO_COLOR "          Do not use colors\n");
+
     exit(0);
 }
 

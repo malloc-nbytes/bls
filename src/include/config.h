@@ -17,6 +17,17 @@
 #define FLAG_1HY_USER        'u'
 #define FLAG_1HY_GROUP       'g'
 
+#define FLAG_1HY_ASCPL {                        \
+        FLAG_1HY_HELP,                          \
+        FLAG_1HY_LONG,                          \
+        FLAG_1HY_FILES_ONLY,                    \
+        FLAG_1HY_DIRS_ONLY,                     \
+        FLAG_1HY_ALL,                           \
+        FLAG_1HY_PERMISSIONS,                   \
+        FLAG_1HY_USER,                          \
+        FLAG_1HY_GROUP                          \
+}
+
 // Two hyphen flags
 #define FLAG_2HY_HELP        "--help"
 #define FLAG_2HY_LONG        "--long"
@@ -27,6 +38,18 @@
 #define FLAG_2HY_PERMISSIONS "--permissions"
 #define FLAG_2HY_USER        "--user"
 #define FLAG_2HY_GROUP       "--group"
+
+#define FLAG_2HY_ASCPL {         \
+        FLAG_2HY_HELP,           \
+        FLAG_2HY_LONG,           \
+        FLAG_2HY_FILES_ONLY,     \
+        FLAG_2HY_DIRS_ONLY,      \
+        FLAG_2HY_ALL,            \
+        FLAG_2HY_NO_COLOR,       \
+        FLAG_2HY_PERMISSIONS,    \
+        FLAG_2HY_USER,           \
+        FLAG_2HY_GROUP,          \
+}
 
 typedef enum uint32_t {
     FLAG_TYPE_HELP        = 1 << 0,
