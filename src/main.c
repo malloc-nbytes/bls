@@ -22,7 +22,8 @@ void usage(void) {
 }
 
 char *eat(int *argc, char ***argv) {
-    if (!(*argc)) return NULL;
+    if (!(*argc))
+        return NULL;
     (*argc)--;
     return *(*argv)++;
 }
@@ -40,6 +41,8 @@ void handle_2hy_flag(const char *arg, int *argc, char ***argv) {
         g_flags |= FLAG_TYPE_ALL;
     else if (!strcmp(arg, FLAG_2HY_NO_COLOR))
         g_flags |= FLAG_TYPE_NO_COLOR;
+    else if (!strcmp(arg, FLAG_2HY_PERMISSIONS))
+        g_flags |= FLAG_TYPE_PERMISSIONS;
     else
         err_wargs("Unknown option: `%s`", arg);
 }
@@ -57,6 +60,8 @@ void handle_1hy_flag(const char *arg, int *argc, char ***argv) {
             g_flags |= FLAG_TYPE_DIRS_ONLY;
         else if (*it == FLAG_1HY_ALL)
             g_flags |= FLAG_TYPE_ALL;
+        else if (*it == FLAG_1HY_PERMISSIONS)
+            g_flags |= FLAG_TYPE_PERMISSIONS;
         else
             err_wargs("Unknown option: `%c`", *it);
             ++it;
@@ -71,22 +76,37 @@ int get_term_width(void) {
 }
 
 int main(int argc, char **argv) {
-    char *path = ".", *arg = NULL;
+    struct {
+        const char **data;
+        size_t len;
+        size_t cap;
+    } paths;
+
+    char *arg = NULL;
 
     g_term_width = get_term_width();
     g_progname = eat(&argc, &argv);
 
     while ((arg = eat(&argc, &argv)) != NULL) {
-        if (arg[0] == '-' && arg[1] && arg[1] == '-')
+        if (arg[0] && safe_peek(arg, 1, '-'))
             handle_2hy_flag(arg, &argc, &argv);
         else if (arg[0] == '-' && arg[1])
             handle_1hy_flag(arg, &argc, &argv);
         else
-            path = arg;
+            da_append(paths.data, paths.len, paths.cap, const char **, arg);
     }
 
-    Listing listing = listing_ls(path);
-    listing_show(&listing);
+    if (paths.len == 0) {
+        Listing listing = listing_ls(".");
+        listing_show(&listing);
+    }
+    else {
+        for (size_t i = 0; i < paths.len; ++i) {
+            printf("%s:\n", paths.data[i]);
+            Listing listing = listing_ls(paths.data[i]);
+            listing_show(&listing);
+        }
+    }
 
     return 0;
 }
