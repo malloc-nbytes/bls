@@ -28,12 +28,13 @@
 #define INVERT    "\033[7m"
 #define RESET     "\033[0m"
 
-#define BLS_DEFAULT_COLOR_DIR GRAY
-#define BLS_DEFAULT_COLOR_DIR_DT GRAY DIM
+#define BLS_DEFAULT_COLOR_DIR WHITE BOLD
+#define BLS_DEFAULT_COLOR_DIR_DT GRAY BOLD
 
-#define BLS_DEFAULT_COLOR_FILE WHITE
-#define BLS_DEFAULT_COLOR_FILE_DT WHITE DIM
+#define BLS_DEFAULT_COLOR_FILE ""
+#define BLS_DEFAULT_COLOR_FILE_DT GRAY
 
 void color(const char *c);
+void padding(void);
 
 #endif // COLOR_H

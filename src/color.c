@@ -9,3 +9,7 @@ void color(const char *c) {
         return;
     printf(c);
 }
+
+void padding(void) {
+    printf("%*s", 2, "");
+}

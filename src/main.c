@@ -102,14 +102,15 @@ int main(int argc, char **argv) {
             da_append(paths.data, paths.len, paths.cap, const char **, arg);
     }
 
+
     if (paths.len == 0) {
+        printf(".:\n");
         Listing listing = listing_ls(".");
         listing_show(&listing);
     }
     else {
         for (size_t i = 0; i < paths.len; ++i) {
-            if (paths.len > 1)
-                printf("%s:\n", paths.data[i]);
+            printf("%s:\n", paths.data[i]);
             Listing listing = listing_ls(paths.data[i]);
             listing_show(&listing);
         }
