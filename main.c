@@ -38,20 +38,29 @@
 #define INVERT    "\033[7m"
 #define RESET     "\033[0m"
 
+#define BLS_DEFAULT_COLOR_DIR GRAY
+#define BLS_DEFAULT_COLOR_DIR_DT GRAY DIM
+
+#define BLS_DEFAULT_COLOR_FILE WHITE
+#define BLS_DEFAULT_COLOR_FILE_DT WHITE DIM
+
 // Default terminal width if retrieving it fails.
 #define BLS_DEFAULT_TERM_WIDTH 80
 
 // One hyphen flags
-#define FLAG_1HY_HELP       "-h"
-#define FLAG_1HY_LONG       "-l"
-#define FLAG_1HY_FILES_ONLY "-f"
-#define FLAG_1HY_DIRS_ONLY  "-d"
+#define FLAG_1HY_HELP       'h'
+#define FLAG_1HY_LONG       'l'
+#define FLAG_1HY_FILES_ONLY 'f'
+#define FLAG_1HY_DIRS_ONLY  'd'
+#define FLAG_1HY_ALL        'a'
 
 // Two hyphen flags
 #define FLAG_2HY_HELP       "--help"
 #define FLAG_2HY_LONG       "--long"
 #define FLAG_2HY_FILES_ONLY "--files"
 #define FLAG_2HY_DIRS_ONLY  "--dirs"
+#define FLAG_2HY_ALL        "--all"
+#define FLAG_2HY_NO_COLOR   "--no-color"
 
 ///////////////////////
 // Macros (Functions)
@@ -83,6 +92,8 @@
 
 #define IS_DIR(e) ((typeof(e)) (e))->d_type == DT_DIR
 
+#define IS_HIDDEN(e) ((typeof(e)) (e))->d_name[0] == '.'
+
 ///////////////////////
 // Structures
 ///////////////////////
@@ -92,6 +103,8 @@ typedef enum uint32_t {
     FLAG_TYPE_LONG       = 1 << 1,
     FLAG_TYPE_FILES_ONLY = 1 << 2,
     FLAG_TYPE_DIRS_ONLY  = 1 << 3,
+    FLAG_TYPE_ALL        = 1 << 4,
+    FLAG_TYPE_NO_COLOR   = 1 << 5,
 } Flag_Type;
 
 typedef struct {
@@ -99,8 +112,8 @@ typedef struct {
     size_t len;
     size_t cap;
     size_t stride;
-    size_t current; // .
-    size_t parent;  // ..
+    int current; // .  (-1 default)
+    int parent;  // .. (-1 default)
 } Listing;
 
 ///////////////////////
@@ -116,9 +129,11 @@ static size_t g_term_width = 0;
 ///////////////////////
 
 Listing ls(const char *const path) {
-    Listing listing = {0};
     DIR *dir;
     struct dirent *entry;
+
+    Listing listing = {0};
+    listing.parent = listing.current = -1;
 
     dir = opendir(path);
     if (!dir)
@@ -126,9 +141,9 @@ Listing ls(const char *const path) {
 
     size_t i = 0;
     while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_name[0] && !entry->d_name[1])
+        if (entry->d_name[0] == '.' && !entry->d_name[1])
             listing.current = i;
-        else if (entry->d_name[0] && entry->d_name[1] == '.' && !entry->d_name[2])
+        else if (entry->d_name[0] == '.' && entry->d_name[1] && entry->d_name[1] == '.' && !entry->d_name[2])
             listing.parent = i;
         da_append(listing.data, listing.len, listing.cap, struct dirent **, entry);
         ++i;
@@ -139,33 +154,52 @@ Listing ls(const char *const path) {
     return listing;
 }
 
-void show_file(const struct dirent *const entry) {
+void color(const char *c) {
+    if (BIT_SET(g_flags, FLAG_TYPE_NO_COLOR))
+        return;
+    printf(c);
+}
+
+int show_file(const struct dirent *const entry) {
     if (BIT_SET(g_flags, FLAG_TYPE_DIRS_ONLY))
-        return;
-    printf(WHITE);
-}
-
-void show_dir(const struct dirent *const entry) {
-    if (BIT_SET(g_flags, FLAG_TYPE_FILES_ONLY))
-        return;
-    printf(GRAY UNDERLINE BOLD);
-}
-
-void dump_name(const struct dirent *const entry) {
+        return 0;
+    if (IS_HIDDEN(entry)) {
+        if (!BIT_SET(g_flags, FLAG_TYPE_ALL))
+            return 0;
+        color(BLS_DEFAULT_COLOR_FILE_DT);
+    }
+    else
+        color(BLS_DEFAULT_COLOR_FILE);
     printf("%s" RESET, entry->d_name);
+    return 1;
+}
+
+int show_dir(const struct dirent *const entry) {
+    if (BIT_SET(g_flags, FLAG_TYPE_FILES_ONLY))
+        return 0;
+    if (IS_HIDDEN(entry)) {
+        if (!BIT_SET(g_flags, FLAG_TYPE_ALL))
+            return 0;
+        color(BLS_DEFAULT_COLOR_DIR_DT);
+    }
+    else
+        color(BLS_DEFAULT_COLOR_DIR);
+    printf("%s" RESET, entry->d_name);
+    return 1;
 }
 
 void show(Listing *listing) {
 
     // Handle the special dirs '.' and '..' first.
-    printf(WHITE BOLD);
-    printf("%s%s",
-           listing->data[listing->current]->d_name,
-           BIT_SET(g_flags, FLAG_TYPE_LONG) ? "\n" : "  ");
-    printf("%s%s",
-           listing->data[listing->parent]->d_name,
-           BIT_SET(g_flags, FLAG_TYPE_LONG) ? "\n" : "  ");
-    printf(RESET);
+    if (BIT_SET(g_flags, FLAG_TYPE_ALL)) {
+        color(GRAY UNDERLINE BOLD);
+        printf("%s" RESET, listing->data[listing->current]->d_name);
+        printf(BIT_SET(g_flags, FLAG_TYPE_LONG) ? "\n" : "  ");
+
+        color(GRAY UNDERLINE BOLD);
+        printf("%s" RESET, listing->data[listing->parent]->d_name);
+        printf(BIT_SET(g_flags, FLAG_TYPE_LONG) ? "\n" : "  ");
+    }
 
     // Go through all entries listed.
     for (size_t i = 0, char_acc = 0; i < listing->len; ++i) {
@@ -175,14 +209,13 @@ void show(Listing *listing) {
 
         struct dirent *entry = listing->data[i];
 
-        if (IS_DIR(entry)) show_dir(entry);
-        else               show_file(entry);
-
-        dump_name(entry);
+        int showed = 0;
+        if (IS_DIR(entry)) showed = show_dir(entry);
+        else               showed = show_file(entry);
 
         // Do not put extra characters after we have
         // gone through all entries.
-        if (i != listing->len-1) {
+        if (showed && i != listing->len-1) {
             if (BIT_SET(g_flags, FLAG_TYPE_LONG))
                 putchar('\n');
             else
@@ -191,9 +224,11 @@ void show(Listing *listing) {
 
         // Keep track of how many characters we have printed
         // and put a newline, but only if LONG is not enabled.
-        char_acc += strlen(entry->d_name);
-        if (!BIT_SET(g_flags, FLAG_TYPE_LONG) && char_acc >= g_term_width/2) {
-            char_acc = 0, putchar('\n');
+        if (showed) {
+            char_acc += strlen(entry->d_name);
+            if (!BIT_SET(g_flags, FLAG_TYPE_LONG) && char_acc >= g_term_width/2) {
+                char_acc = 0, putchar('\n');
+            }
         }
     }
 
@@ -212,17 +247,40 @@ char *eat(int *argc, char ***argv) {
     return *(*argv)++;
 }
 
-void handle_flag(const char *arg, int *argc, char ***argv) {
-    if (!strcmp(arg, FLAG_1HY_HELP) || !strcmp(arg, FLAG_2HY_HELP))
+void handle_2hy_flag(const char *arg, int *argc, char ***argv) {
+    if (!strcmp(arg, FLAG_2HY_HELP))
         usage();
-    else if (!strcmp(arg, FLAG_1HY_LONG) || !strcmp(arg, FLAG_2HY_LONG))
+    else if (!strcmp(arg, FLAG_2HY_LONG))
         g_flags |= FLAG_TYPE_LONG;
-    else if (!strcmp(arg, FLAG_1HY_FILES_ONLY) || !strcmp(arg, FLAG_2HY_FILES_ONLY))
+    else if (!strcmp(arg, FLAG_2HY_FILES_ONLY))
         g_flags |= FLAG_TYPE_FILES_ONLY;
-    else if (!strcmp(arg, FLAG_1HY_DIRS_ONLY) || !strcmp(arg, FLAG_2HY_DIRS_ONLY))
+    else if (!strcmp(arg, FLAG_2HY_DIRS_ONLY))
         g_flags |= FLAG_TYPE_DIRS_ONLY;
+    else if (!strcmp(arg, FLAG_2HY_ALL))
+        g_flags |= FLAG_TYPE_ALL;
+    else if (!strcmp(arg, FLAG_2HY_NO_COLOR))
+        g_flags |= FLAG_TYPE_NO_COLOR;
     else
         err_wargs("Unknown option: `%s`", arg);
+}
+
+void handle_1hy_flag(const char *arg, int *argc, char ***argv) {
+    const char *it = arg+1;
+    while (it && *it != ' ' && *it != '\0') {
+        if (*it == FLAG_1HY_HELP)
+            usage();
+        else if (*it == FLAG_1HY_LONG)
+            g_flags |= FLAG_TYPE_LONG;
+        else if (*it == FLAG_1HY_FILES_ONLY)
+            g_flags |= FLAG_TYPE_FILES_ONLY;
+        else if (*it == FLAG_1HY_DIRS_ONLY)
+            g_flags |= FLAG_TYPE_DIRS_ONLY;
+        else if (*it == FLAG_1HY_ALL)
+            g_flags |= FLAG_TYPE_ALL;
+        else
+            err_wargs("Unknown option: `%c`", *it);
+            ++it;
+    }
 }
 
 int get_term_width(void) {
@@ -239,8 +297,10 @@ int main(int argc, char **argv) {
     g_progname = eat(&argc, &argv);
 
     while ((arg = eat(&argc, &argv)) != NULL) {
-        if (arg[0] == '-')
-            handle_flag(arg, &argc, &argv);
+        if (arg[0] == '-' && arg[1] && arg[1] == '-')
+            handle_2hy_flag(arg, &argc, &argv);
+        else if (arg[0] == '-' && arg[1])
+            handle_1hy_flag(arg, &argc, &argv);
         else
             path = arg;
     }
