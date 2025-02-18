@@ -38,8 +38,7 @@
 #define INVERT    "\033[7m"
 #define RESET     "\033[0m"
 
-// Default terminal width if retrieving
-// it fails.
+// Default terminal width if retrieving it fails.
 #define BLS_DEFAULT_TERM_WIDTH 80
 
 // One hyphen flags
@@ -141,10 +140,14 @@ Listing ls(const char *const path) {
 }
 
 void show_file(const struct dirent *const entry) {
+    if (BIT_SET(g_flags, FLAG_TYPE_DIRS_ONLY))
+        return;
     printf(WHITE);
 }
 
 void show_dir(const struct dirent *const entry) {
+    if (BIT_SET(g_flags, FLAG_TYPE_FILES_ONLY))
+        return;
     printf(GRAY UNDERLINE BOLD);
 }
 
@@ -214,6 +217,12 @@ void handle_flag(const char *arg, int *argc, char ***argv) {
         usage();
     else if (!strcmp(arg, FLAG_1HY_LONG) || !strcmp(arg, FLAG_2HY_LONG))
         g_flags |= FLAG_TYPE_LONG;
+    else if (!strcmp(arg, FLAG_1HY_FILES_ONLY) || !strcmp(arg, FLAG_2HY_FILES_ONLY))
+        g_flags |= FLAG_TYPE_FILES_ONLY;
+    else if (!strcmp(arg, FLAG_1HY_DIRS_ONLY) || !strcmp(arg, FLAG_2HY_DIRS_ONLY))
+        g_flags |= FLAG_TYPE_DIRS_ONLY;
+    else
+        err_wargs("Unknown option: `%s`", arg);
 }
 
 int get_term_width(void) {
