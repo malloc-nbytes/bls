@@ -7,33 +7,23 @@
 #include <pwd.h>
 #include <grp.h>
 
-#define IS_DIR(e) ((typeof(e)) (e))->d_type == DT_DIR
+#define IS_DIR(e) ((typeof(e)) (e))->dirent->d_type == DT_DIR
 
-#define IS_HIDDEN(e) ((typeof(e)) (e))->d_name[0] == '.'
+#define IS_HIDDEN(e) ((typeof(e)) (e))->dirent->d_name[0] == '.'
 
-/* typedef struct { */
-/*     struct dirent **actual; */
-/*     struct passwd **pws; */
-/*     struct group **grs; */
-/*     struct stat **stats; */
-/*     size_t len; */
-/*     size_t cap; */
-/* } Entry; */
+typedef struct {
+    struct dirent *dirent;
+    struct passwd *pw;
+    struct group *gr;
+    struct stat *st;
+} Entry;
 
 typedef struct {
     struct {
-        struct dirent **actual;
-        struct passwd **pws;
-        struct group **grs;
-        struct stat **stats;
+        Entry *data;
         size_t len;
         size_t cap;
     } entries;
-    /* struct { */
-    /*     Entry *data; */
-    /*     size_t len; */
-    /*     size_t cap; */
-    /* } entries; */
     int current; // .  (-1 default)
     int parent;  // .. (-1 default)
 } Listing;

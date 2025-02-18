@@ -42,7 +42,11 @@ void handle_2hy_flag(const char *arg, int *argc, char ***argv) {
     else if (!strcmp(arg, FLAG_2HY_NO_COLOR))
         g_flags |= FLAG_TYPE_NO_COLOR;
     else if (!strcmp(arg, FLAG_2HY_PERMISSIONS))
-        g_flags |= FLAG_TYPE_PERMISSIONS;
+        g_flags |= FLAG_TYPE_PERMISSIONS | FLAG_TYPE_LONG;
+    else if (!strcmp(arg, FLAG_2HY_USER))
+        g_flags |= FLAG_TYPE_USER | FLAG_TYPE_LONG;
+    else if (!strcmp(arg, FLAG_2HY_GROUP))
+        g_flags |= FLAG_TYPE_GROUP | FLAG_TYPE_LONG;
     else
         err_wargs("Unknown option: `%s`", arg);
 }
@@ -61,7 +65,11 @@ void handle_1hy_flag(const char *arg, int *argc, char ***argv) {
         else if (*it == FLAG_1HY_ALL)
             g_flags |= FLAG_TYPE_ALL;
         else if (*it == FLAG_1HY_PERMISSIONS)
-            g_flags |= FLAG_TYPE_PERMISSIONS;
+            g_flags |= FLAG_TYPE_PERMISSIONS | FLAG_TYPE_LONG;
+        else if (*it == FLAG_1HY_USER)
+            g_flags |= FLAG_TYPE_USER | FLAG_TYPE_LONG;
+        else if (*it == FLAG_1HY_GROUP)
+            g_flags |= FLAG_TYPE_GROUP | FLAG_TYPE_LONG;
         else
             err_wargs("Unknown option: `%c`", *it);
             ++it;
@@ -100,7 +108,8 @@ int main(int argc, char **argv) {
     }
     else {
         for (size_t i = 0; i < paths.len; ++i) {
-            printf("%s:\n", paths.data[i]);
+            if (paths.len > 1)
+                printf("%s:\n", paths.data[i]);
             Listing listing = listing_ls(paths.data[i]);
             listing_show(&listing);
         }

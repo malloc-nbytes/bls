@@ -14,6 +14,8 @@
 #define FLAG_1HY_DIRS_ONLY   'd'
 #define FLAG_1HY_ALL         'a'
 #define FLAG_1HY_PERMISSIONS 'p'
+#define FLAG_1HY_USER        'u'
+#define FLAG_1HY_GROUP       'g'
 
 // Two hyphen flags
 #define FLAG_2HY_HELP        "--help"
@@ -23,6 +25,8 @@
 #define FLAG_2HY_ALL         "--all"
 #define FLAG_2HY_NO_COLOR    "--no-color"
 #define FLAG_2HY_PERMISSIONS "--permissions"
+#define FLAG_2HY_USER        "--user"
+#define FLAG_2HY_GROUP       "--group"
 
 typedef enum uint32_t {
     FLAG_TYPE_HELP        = 1 << 0,
@@ -32,6 +36,8 @@ typedef enum uint32_t {
     FLAG_TYPE_ALL         = 1 << 4,
     FLAG_TYPE_NO_COLOR    = 1 << 5,
     FLAG_TYPE_PERMISSIONS = 1 << 6,
+    FLAG_TYPE_USER        = 1 << 7,
+    FLAG_TYPE_GROUP       = 1 << 8,
 } Flag_Type;
 
 extern uint32_t g_flags;
